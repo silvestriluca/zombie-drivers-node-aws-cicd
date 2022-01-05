@@ -14,7 +14,7 @@ variable "app_name_prefix" {
 variable "app_repository_name" {
   type        = string
   description = "Name of the repositoy where the IaC and/or app code is stored"
-  default     = "github/zombie-drivers-node-aws"
+  default     = "zombie-drivers-node-aws"
 }
 
 variable "app_repo_production_branch" {
