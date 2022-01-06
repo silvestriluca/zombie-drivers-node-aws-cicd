@@ -46,13 +46,16 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_cloudwatch_event_rule.app_repo_event_in_dev](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
 | [aws_cloudwatch_event_rule.app_repo_event_in_main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
 | [aws_cloudwatch_event_target.invoke_pipeline_1](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
+| [aws_cloudwatch_event_target.invoke_pipeline_2_dev](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
 | [aws_cloudwatch_log_group.codebuild](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_codebuild_project.app_build](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_project) | resource |
 | [aws_codebuild_project.terraform_build](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_project) | resource |
 | [aws_codecommit_repository.app_repo](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codecommit_repository) | resource |
 | [aws_codepipeline.pipeline_1](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codepipeline) | resource |
+| [aws_codepipeline.pipeline_2_dev](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codepipeline) | resource |
 | [aws_iam_role.cloudwatch_events_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.codebuild_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.codepipeline_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
@@ -72,6 +75,7 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_app_name_prefix"></a> [app\_name\_prefix](#input\_app\_name\_prefix) | Name of the app/service which will use the CI/CD. Prefix (short) version | `string` | `"zdriv"` | no |
 | <a name="input_app_name_verbose"></a> [app\_name\_verbose](#input\_app\_name\_verbose) | Name of the app/service which will use the CI/CD. Verbose version | `string` | `"zombie-drivers"` | no |
+| <a name="input_app_repo_development_branch"></a> [app\_repo\_development\_branch](#input\_app\_repo\_development\_branch) | Branch name where the development (unstable) code resides | `string` | `"develop"` | no |
 | <a name="input_app_repo_production_branch"></a> [app\_repo\_production\_branch](#input\_app\_repo\_production\_branch) | Branch name where the production code resides | `string` | `"main"` | no |
 | <a name="input_app_repository_name"></a> [app\_repository\_name](#input\_app\_repository\_name) | Name of the repositoy where the IaC and/or app code is stored | `string` | `"zombie-drivers-node-aws"` | no |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | Name of the region where resources will be deployed | `string` | `"eu-west-1"` | no |
