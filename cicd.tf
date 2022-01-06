@@ -453,6 +453,7 @@ resource "aws_codepipeline" "pipeline_1" {
 
     action {
       name             = "Deploy-Apply_IaC"
+      runrun_order     = 1
       namespace        = "ApplyVariables"
       category         = "Build"
       owner            = "AWS"
@@ -485,6 +486,7 @@ resource "aws_codepipeline" "pipeline_1" {
 
     action {
       name             = "Deploy-App"
+      runrun_order     = 2
       namespace        = "AppDeployVariables"
       category         = "Build"
       owner            = "AWS"
