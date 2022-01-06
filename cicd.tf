@@ -251,7 +251,7 @@ resource "aws_cloudwatch_event_rule" "app_repo_event_in_dev" {
   name_prefix   = "${var.app_name_prefix}-repo-dev"
   description   = "${aws_codecommit_repository.app_repo.repository_name} - Capture changes in develop branch"
   is_enabled    = true
-  tags          = local.global_tags
+  tags          = merge(local.global_tags, { stage = "dev" })
   event_pattern = <<EOF
 {
   "source": [
@@ -918,4 +918,20 @@ resource "aws_kms_key" "artifact_store" {
 resource "aws_kms_alias" "artifact_store" {
   name          = "alias/s3-${var.app_name_prefix}-cicd-artifacts-xxx"
   target_key_id = aws_kms_key.artifact_store.key_id
+}
+
+################## SSM PARAMETER STORE ##################
+
+# Stores Terraform backend config values (for terraform init command)
+resource "aws_ssm_parameter" "terraform_provider_config" {
+  name  = "/${var.app_name_prefix}/${terraform.workspace}/tf-backend-config"
+  type  = "SecureString"
+  value = "placeholder"
+  tags  = local.global_tags
+
+  lifecycle {
+    ignore_changes = [
+      value,
+    ]
+  }
 }
