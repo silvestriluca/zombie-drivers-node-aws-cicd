@@ -524,6 +524,275 @@ resource "aws_codepipeline" "pipeline_1" {
   tags = local.global_tags
 }
 
+resource "aws_codepipeline" "pipeline_2_dev" {
+  name     = "${var.app_name_verbose}-dev"
+  role_arn = aws_iam_role.codepipeline_role.arn
+
+  artifact_store {
+    location = aws_s3_bucket.codepipeline_bucket.bucket
+    type     = "S3"
+    # Uses S3 KMS encryption
+    encryption_key {
+      id   = aws_kms_key.artifact_store.arn
+      type = "KMS"
+    }
+
+  }
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      namespace        = "SourceVariables"
+      category         = "Source"
+      owner            = "AWS"
+      provider         = "CodeCommit"
+      version          = "1"
+      input_artifacts  = []
+      output_artifacts = ["Source"]
+
+      configuration = {
+        RepositoryName       = aws_codecommit_repository.app_repo.repository_name
+        BranchName           = var.app_repo_development_branch
+        PollForSourceChanges = false
+      }
+    }
+  }
+
+  stage {
+    name = "Build"
+
+    action {
+      name             = "Build-Plan_IaC"
+      namespace        = "PlanVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["Source"]
+      output_artifacts = ["DryRunArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.terraform_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "PLAN"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+
+    action {
+      name             = "Build-App"
+      namespace        = "BuildVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["Source"]
+      output_artifacts = ["AppBuildArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_BUILD"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  stage {
+    name = "Test"
+
+    action {
+      name             = "Test-App"
+      namespace        = "TestVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppBuildArtifact"]
+      output_artifacts = ["AppTestArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_TEST"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  stage {
+    name = "Approval"
+
+    action {
+      name             = "Approve"
+      category         = "Approval"
+      owner            = "AWS"
+      provider         = "Manual"
+      version          = "1"
+      input_artifacts  = []
+      output_artifacts = []
+      configuration = {
+        CustomData = "Approve IaC changes"
+      }
+    }
+  }
+
+  stage {
+    name = "Deploy-IaC"
+
+    action {
+      name             = "Deploy-Apply_IaC"
+      namespace        = "ApplyVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["DryRunArtifact"]
+      output_artifacts = ["ApplyArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.terraform_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APPLY"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+
+  }
+
+  stage {
+    name = "Publish-App"
+
+    action {
+      name             = "Publish-App-Containers"
+      namespace        = "PublishVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppBuildArtifact"]
+      output_artifacts = ["AppPublishedArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_PUBLISH"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  stage {
+    name = "Deploy-App"
+
+    action {
+      name             = "Deploy-App"
+      namespace        = "AppDeployVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppPublishedArtifact"]
+      output_artifacts = ["AppDeployedArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_DEPLOY"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  tags = merge(local.global_tags, { stage = "dev" })
+}
+
 ################## CODE-BUILD ##################
 
 resource "aws_codebuild_project" "terraform_build" {

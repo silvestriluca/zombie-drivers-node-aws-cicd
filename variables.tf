@@ -23,6 +23,12 @@ variable "app_repo_production_branch" {
   default     = "main"
 }
 
+variable "app_repo_development_branch" {
+  type        = string
+  description = "Branch name where the development (unstable) code resides"
+  default     = "develop"
+}
+
 variable "aws_region" {
   type        = string
   description = "Name of the region where resources will be deployed"
