@@ -413,7 +413,44 @@ resource "aws_codepipeline" "pipeline_1" {
   }
 
   stage {
-    name = "Publish"
+    name = "Deploy-IaC"
+
+    action {
+      name             = "Deploy-Apply_IaC"
+      namespace        = "ApplyVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["DryRunArtifact"]
+      output_artifacts = ["ApplyArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.terraform_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APPLY"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+
+  }
+
+  stage {
+    name = "Publish-App"
 
     action {
       name             = "Publish-App-Containers"
@@ -449,44 +486,10 @@ resource "aws_codepipeline" "pipeline_1" {
   }
 
   stage {
-    name = "Deploy"
-
-    action {
-      name             = "Deploy-Apply_IaC"
-      run_order        = 1
-      namespace        = "ApplyVariables"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["DryRunArtifact"]
-      output_artifacts = ["ApplyArtifact"]
-      version          = "1"
-
-      configuration = {
-        ProjectName = aws_codebuild_project.terraform_build.name
-        EnvironmentVariables = jsonencode([
-          {
-            name  = "Release_ID"
-            value = "#{codepipeline.PipelineExecutionId}"
-            type  = "PLAINTEXT"
-          },
-          {
-            name  = "Commit_ID"
-            value = "#{SourceVariables.CommitId}"
-            type  = "PLAINTEXT"
-          },
-          {
-            name  = "Phase"
-            value = "APPLY"
-            type  = "PLAINTEXT"
-          }
-        ])
-      }
-    }
+    name = "Deploy-App"
 
     action {
       name             = "Deploy-App"
-      run_order        = 2
       namespace        = "AppDeployVariables"
       category         = "Build"
       owner            = "AWS"
