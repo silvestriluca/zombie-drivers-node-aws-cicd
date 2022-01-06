@@ -292,10 +292,10 @@ resource "aws_codepipeline" "pipeline_1" {
   }
 
   stage {
-    name = "Plan"
+    name = "Build"
 
     action {
-      name             = "Terraform_Plan"
+      name             = "Build-Plan_IaC"
       namespace        = "PlanVariables"
       category         = "Build"
       owner            = "AWS"
@@ -325,6 +325,74 @@ resource "aws_codepipeline" "pipeline_1" {
         ])
       }
     }
+
+    action {
+      name             = "Build-App"
+      namespace        = "BuildVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["Source"]
+      output_artifacts = ["AppBuildArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_BUILD"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  stage {
+    name = "Test"
+
+    action {
+      name             = "Test-App"
+      namespace        = "TestVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppBuildArtifact"]
+      output_artifacts = ["AppTestArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_TEST"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
   }
 
   stage {
@@ -345,10 +413,46 @@ resource "aws_codepipeline" "pipeline_1" {
   }
 
   stage {
-    name = "Apply"
+    name = "Publish"
 
     action {
-      name             = "Terraform_Apply"
+      name             = "Publish-App-Containers"
+      namespace        = "PublishVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppBuildArtifact"]
+      output_artifacts = ["AppPublishedArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_PUBLISH"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
+  }
+
+  stage {
+    name = "Deploy"
+
+    action {
+      name             = "Deploy-Apply_IaC"
       namespace        = "ApplyVariables"
       category         = "Build"
       owner            = "AWS"
@@ -378,6 +482,38 @@ resource "aws_codepipeline" "pipeline_1" {
         ])
       }
     }
+
+    action {
+      name             = "Deploy-App"
+      namespace        = "AppDeployVariables"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["AppPublishedArtifact"]
+      output_artifacts = ["AppDeployedArtifact"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.app_build.name
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "Release_ID"
+            value = "#{codepipeline.PipelineExecutionId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Commit_ID"
+            value = "#{SourceVariables.CommitId}"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Phase"
+            value = "APP_DEPLOY"
+            type  = "PLAINTEXT"
+          }
+        ])
+      }
+    }
   }
 
   tags = local.global_tags
@@ -386,10 +522,10 @@ resource "aws_codepipeline" "pipeline_1" {
 ################## CODE-BUILD ##################
 
 resource "aws_codebuild_project" "terraform_build" {
-  name           = var.app_name_verbose
-  description    = "${var.app_name_verbose} Terraform Plan/Apply jobs"
+  name           = "${var.app_name_verbose}-iac"
+  description    = "${var.app_name_verbose} IaC - Terraform Plan/Apply jobs"
   badge_enabled  = false
-  build_timeout  = "5"
+  build_timeout  = "30"
   encryption_key = aws_kms_key.artifact_store.arn
   service_role   = aws_iam_role.codebuild_role.arn
 
@@ -416,7 +552,46 @@ resource "aws_codebuild_project" "terraform_build" {
   }
 
   source {
+    type      = "CODEPIPELINE"
+    buildspec = "iac_buildspec.yml"
+  }
+
+  tags = local.global_tags
+}
+
+resource "aws_codebuild_project" "app_build" {
+  name           = "${var.app_name_verbose}-app"
+  description    = "${var.app_name_verbose} App - Build/Test jobs"
+  badge_enabled  = false
+  build_timeout  = "30"
+  encryption_key = aws_kms_key.artifact_store.arn
+  service_role   = aws_iam_role.codebuild_role.arn
+
+  artifacts {
     type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:5.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+
+    environment_variable {
+      name  = "TF_VERSION"
+      value = var.terraform_version
+    }
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name = aws_cloudwatch_log_group.codebuild.name
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "app_buildspec.yml"
   }
 
   tags = local.global_tags
