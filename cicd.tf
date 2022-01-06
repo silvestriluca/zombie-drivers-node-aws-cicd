@@ -166,7 +166,8 @@ resource "aws_iam_role_policy" "cloudwatch_events_policy" {
         "codepipeline:StartPipelineExecution"
       ],
       "Resource": [
-        "${aws_codepipeline.pipeline_1.arn}"
+        "${aws_codepipeline.pipeline_1.arn}",
+        "${aws_codepipeline.pipeline_2_dev.arn}"
       ]
     }
   ]
@@ -243,6 +244,41 @@ resource "aws_cloudwatch_event_target" "invoke_pipeline_1" {
   target_id = "Run-${aws_codepipeline.pipeline_1.name}"
   rule      = aws_cloudwatch_event_rule.app_repo_event_in_main.name
   arn       = aws_codepipeline.pipeline_1.arn
+  role_arn  = aws_iam_role.cloudwatch_events_role.arn
+}
+
+resource "aws_cloudwatch_event_rule" "app_repo_event_in_dev" {
+  name_prefix   = "${var.app_name_prefix}-repo-dev"
+  description   = "${aws_codecommit_repository.app_repo.repository_name} - Capture changes in develop branch"
+  is_enabled    = true
+  tags          = local.global_tags
+  event_pattern = <<EOF
+{
+  "source": [
+    "aws.codecommit"
+  ],
+  "detail-type": [
+    "CodeCommit Repository State Change"
+  ],
+  "resources": [
+    "${aws_codecommit_repository.app_repo.arn}"
+  ],
+  "detail": {
+    "referenceType": [
+      "branch"
+    ],
+    "referenceName": [
+      "develop"
+    ]
+  }
+}
+EOF
+}
+
+resource "aws_cloudwatch_event_target" "invoke_pipeline_2_dev" {
+  target_id = "Run-${aws_codepipeline.pipeline_2_dev.name}"
+  rule      = aws_cloudwatch_event_rule.app_repo_event_in_dev.name
+  arn       = aws_codepipeline.pipeline_2_dev.arn
   role_arn  = aws_iam_role.cloudwatch_events_role.arn
 }
 
