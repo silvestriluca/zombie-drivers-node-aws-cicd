@@ -401,7 +401,7 @@ resource "aws_codepipeline" "pipeline_1" {
     action {
       name             = "Test-App"
       namespace        = "TestVariables"
-      category         = "Build"
+      category         = "Test"
       owner            = "AWS"
       provider         = "CodeBuild"
       input_artifacts  = ["AppBuildArtifact"]
@@ -514,6 +514,11 @@ resource "aws_codepipeline" "pipeline_1" {
           {
             name  = "Phase"
             value = "APP_PUBLISH"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Account_ID"
+            value = data.aws_caller_identity.current.account_id
             type  = "PLAINTEXT"
           }
         ])
@@ -670,7 +675,7 @@ resource "aws_codepipeline" "pipeline_2_dev" {
     action {
       name             = "Test-App"
       namespace        = "TestVariables"
-      category         = "Build"
+      category         = "Test"
       owner            = "AWS"
       provider         = "CodeBuild"
       input_artifacts  = ["AppBuildArtifact"]
@@ -783,6 +788,11 @@ resource "aws_codepipeline" "pipeline_2_dev" {
           {
             name  = "Phase"
             value = "APP_PUBLISH"
+            type  = "PLAINTEXT"
+          },
+          {
+            name  = "Account_ID"
+            value = data.aws_caller_identity.current.account_id
             type  = "PLAINTEXT"
           }
         ])
