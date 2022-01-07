@@ -499,7 +499,7 @@ resource "aws_codepipeline" "pipeline_1" {
       version          = "1"
 
       configuration = {
-        ProjectName = aws_codebuild_project.app_build.name
+        ProjectName = aws_codebuild_project.docker_build.name
         EnvironmentVariables = jsonencode([
           {
             name  = "Release_ID"
@@ -773,7 +773,7 @@ resource "aws_codepipeline" "pipeline_2_dev" {
       version          = "1"
 
       configuration = {
-        ProjectName = aws_codebuild_project.app_build.name
+        ProjectName = aws_codebuild_project.docker_build.name
         EnvironmentVariables = jsonencode([
           {
             name  = "Release_ID"
@@ -896,6 +896,45 @@ resource "aws_codebuild_project" "app_build" {
     image                       = "aws/codebuild/standard:5.0"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
+
+    environment_variable {
+      name  = "TF_VERSION"
+      value = var.terraform_version
+    }
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name = aws_cloudwatch_log_group.codebuild.name
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "app_buildspec.yml"
+  }
+
+  tags = local.global_tags
+}
+
+resource "aws_codebuild_project" "docker_build" {
+  name           = "${var.app_name_verbose}-containers"
+  description    = "${var.app_name_verbose} App - Publish jobs"
+  badge_enabled  = false
+  build_timeout  = "30"
+  encryption_key = aws_kms_key.artifact_store.arn
+  service_role   = aws_iam_role.codebuild_role.arn
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:5.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
 
     environment_variable {
       name  = "TF_VERSION"
