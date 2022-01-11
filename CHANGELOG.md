@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - KMS for artifact store encryption
 - S3 bucket for artifact store
 - terrafrom.tfvars file for variables
-- CloudWatch log group for CodeBuild job
+- CloudWatch log groups for CodeBuild jobs
 
 ### Changed
 - N/A
