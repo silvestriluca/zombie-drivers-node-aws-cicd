@@ -204,8 +204,20 @@ resource "aws_s3_bucket_public_access_block" "codepipeline_bucket" {
 
 ################## CLOUDWATCH ##################
 
-resource "aws_cloudwatch_log_group" "codebuild" {
-  name              = "/aws/codebuild/${var.app_name_prefix}"
+resource "aws_cloudwatch_log_group" "codebuild_app" {
+  name              = "/aws/codebuild/${var.app_name_prefix}/app"
+  retention_in_days = 0
+  tags              = local.global_tags
+}
+
+resource "aws_cloudwatch_log_group" "codebuild_iac" {
+  name              = "/aws/codebuild/${var.app_name_prefix}/iac"
+  retention_in_days = 0
+  tags              = local.global_tags
+}
+
+resource "aws_cloudwatch_log_group" "codebuild_containers" {
+  name              = "/aws/codebuild/${var.app_name_prefix}/containers"
   retention_in_days = 0
   tags              = local.global_tags
 }
@@ -867,7 +879,7 @@ resource "aws_codebuild_project" "terraform_build" {
 
   logs_config {
     cloudwatch_logs {
-      group_name = aws_cloudwatch_log_group.codebuild.name
+      group_name = aws_cloudwatch_log_group.codebuild_iac.name
     }
   }
 
@@ -905,7 +917,7 @@ resource "aws_codebuild_project" "app_build" {
 
   logs_config {
     cloudwatch_logs {
-      group_name = aws_cloudwatch_log_group.codebuild.name
+      group_name = aws_cloudwatch_log_group.codebuild_app.name
     }
   }
 
@@ -944,7 +956,7 @@ resource "aws_codebuild_project" "docker_build" {
 
   logs_config {
     cloudwatch_logs {
-      group_name = aws_cloudwatch_log_group.codebuild.name
+      group_name = aws_cloudwatch_log_group.codebuild_containers.name
     }
   }
 
