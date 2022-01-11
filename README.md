@@ -1,6 +1,8 @@
 # CI/CD infrastructure for zombie-drivers-node-aws  <!-- omit in toc --> 
-- [Template](#template)
+- [Infrastructure](#infrastructure)
   - [Description](#description)
+  - [Architectural diagram](#architectural-diagram)
+  - [How to deploy](#how-to-deploy)
   - [Changelog](#changelog)
 - [Terraform IaC details](#terraform-iac-details)
   - [Requirements](#requirements)
@@ -10,15 +12,42 @@
   - [Inputs](#inputs)
   - [Outputs](#outputs)
 
-# Template
+# Infrastructure
 ## Description
 This repo describes the CI/CD infrastructure to build and deploy zombie-drivers-node-aws and its infrastructure.
 The CI/CD workflow is managed by a pipeline in AWS CodePipeline.
+2 pipelines are deployed (dev/prod).
 The basic stages are:
 - Source (from the app CodeCommit repository)
-- ...
+- Build (IaC and App)
+- Test (App)
+- Approval (Manual)
+- Deploy-IaC
+- Publish-App (Publishes the containers/artifact)
+- Deploy-App (Deploys the app to dev/prod stage)
 
 Artifact are saved in a specific artifact S3 bucket (`zdriv-cicd-artifacts-###`) and encoded with KMS using a Customer Managed Key (`alias/s3-zdriv-cicd-artifacts-xxx`)
+
+## Architectural diagram
+![Diagram](./docs/img/cicd.png)
+
+## How to deploy
+1. Install Terraform (> v1.0)
+2. State files is saved on S3. Fill in and save a config file with this structure - [TF S3 backend documentation](https://www.terraform.io/language/settings/backends/s3):
+```text
+bucket          = ""
+key             = ""
+region          = ""
+encrypt         = true/false
+kms_key_id      = ""
+dynamodb_table  = ""
+```
+3. Deploy the infrastructure with Terraform
+```bash
+terraform init -backend-config YOUR_CONFIG_FILE
+terraform plan
+terraform apply
+```
 
 ## Changelog
 Changelog can be found [here](./CHANGELOG.md)
