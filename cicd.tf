@@ -225,7 +225,7 @@ resource "aws_cloudwatch_log_group" "codebuild_containers" {
 ################## CLOUDWATCH EVENTS ##################
 
 resource "aws_cloudwatch_event_rule" "app_repo_event_in_main" {
-  name_prefix   = "${var.app_name_prefix}-repo-main"
+  name_prefix   = "${var.app_name_prefix}-repo-main-"
   description   = "${aws_codecommit_repository.app_repo.repository_name} - Capture changes in main branch"
   is_enabled    = true
   tags          = local.global_tags
@@ -260,7 +260,7 @@ resource "aws_cloudwatch_event_target" "invoke_pipeline_1" {
 }
 
 resource "aws_cloudwatch_event_rule" "app_repo_event_in_dev" {
-  name_prefix   = "${var.app_name_prefix}-repo-dev"
+  name_prefix   = "${var.app_name_prefix}-repo-dev-"
   description   = "${aws_codecommit_repository.app_repo.repository_name} - Capture changes in develop branch"
   is_enabled    = true
   tags          = merge(local.global_tags, { stage = "dev" })
