@@ -3,6 +3,7 @@
   - [Description](#description)
   - [Architectural diagram](#architectural-diagram)
   - [How to deploy](#how-to-deploy)
+  - [Operations](#operations)
   - [Changelog](#changelog)
 - [Terraform IaC details](#terraform-iac-details)
   - [Requirements](#requirements)
@@ -48,6 +49,13 @@ terraform init -backend-config YOUR_CONFIG_FILE
 terraform plan
 terraform apply
 ```
+
+## Operations
+- 2 pipelines are deployed: dev & prod.
+- Code is sourced from a provisioned CodeCommit repository
+- **Dev** pipeline is triggered by commits in `devlop` branch
+- **Prod** pipeline is triggered by commits in `main` branch
+- In CI/CD pipleines, IaC is deployed before app publish/deploy in order for infrastructure to be there at publish stage (e.g. private ECR repositories) 
 
 ## Changelog
 Changelog can be found [here](./CHANGELOG.md)
