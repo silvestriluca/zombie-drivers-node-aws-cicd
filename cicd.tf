@@ -535,8 +535,8 @@ resource "aws_codepipeline" "pipeline_1" {
           },
           {
             name  = "Deployment_stage"
-            value = data.aws_caller_identity.current.account_id
-            type  = "prod"
+            value = "prod"
+            type  = "PLAINTEXT"
           }
         ])
       }
@@ -814,8 +814,8 @@ resource "aws_codepipeline" "pipeline_2_dev" {
           },
           {
             name  = "Deployment_stage"
-            value = data.aws_caller_identity.current.account_id
-            type  = "dev"
+            value = "dev"
+            type  = "PLAINTEXT"
           }
         ])
       }
