@@ -56,5 +56,5 @@ variable "stage" {
 variable "terraform_version" {
   type        = string
   description = "Version of Terraform to run in build jobs"
-  default     = "1.1.2"
+  default     = "1.1.4"
 }
