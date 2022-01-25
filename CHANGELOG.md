@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - N/A
 
-## [1.0.0] - 11/01/2022 - First release
+## [1.0.0] - xx/xx/2022 - First release
 ### Added
 - Basic tagging structure for CI/CD
 - Remote state support
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - S3 bucket for artifact store
 - terrafrom.tfvars file for variables
 - CloudWatch log groups for CodeBuild jobs
+- Using Terraform v1.1.4
 
 ### Changed
 - N/A
