@@ -995,10 +995,11 @@ resource "aws_kms_alias" "artifact_store" {
 
 # Stores Terraform backend config values (for terraform init command)
 resource "aws_ssm_parameter" "terraform_provider_config" {
-  name  = "/${var.app_name_prefix}/${terraform.workspace}/tf-backend-config"
-  type  = "SecureString"
-  value = "placeholder"
-  tags  = local.global_tags
+  name        = "/${var.app_name_prefix}/${terraform.workspace}/tf-backend-config"
+  description = "Terraform backend config for ${var.app_name_verbose} as described in ${var.app_repository_name} repository."
+  type        = "SecureString"
+  value       = "placeholder"
+  tags        = local.global_tags
 
   lifecycle {
     ignore_changes = [
