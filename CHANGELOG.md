@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - N/A
 
-## [1.0.0] - xx/xx/2022 - First release
+## [1.0.0] - 28/01/2022 - First release
 ### Added
 - Basic tagging structure for CI/CD
 - Remote state support
